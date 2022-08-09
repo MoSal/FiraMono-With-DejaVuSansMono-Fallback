@@ -1,0 +1,42 @@
+#!/bin/zsh
+
+# Examples:
+# ./merge_fonts FiraMono-Regular.ttf DejaVuSansMono.ttf 'Fira Mono With Fallback'
+# ./merge_fonts FiraMono-Medium.ttf DejaVuSansMono.ttf 'Fira Mono With Fallback'
+# ./merge_fonts FiraMono-Bold.ttf DejaVuSansMono-Bold.ttf 'Fira Mono With Fallback'
+
+# Check tmp file we will create do not already exist
+[[ -f "my_custom_font.ttf" ]] && echo "my_custom_font.ttf already exists" && return 1
+[[ -f "1.ttf" ]] && echo "1.ttf already exists" && return 2
+[[ -f "2.ttf" ]] && echo "2.ttf already exists" && return 3
+
+# check that we are passing two files
+[[ ! -f $1 ]] && echo "$1 does not exist" && return 4
+[[ ! -f $2 ]] && echo "$2 does not exist" && return 5
+
+./merge_fonts_ff $1 $2
+
+rm -f 1.ttf 2.ttf
+
+ttx my_custom_font.ttf
+rm -f my_custom_font.ttf
+
+orig_spaced="$(fc-query -f '%{family[0]}\n' $1)"
+orig_dashed=${orig_spaced// /-}
+orig_no_space=${orig_spaced// /}
+spaced=$3
+dashed=${spaced// /-}
+no_space=${spaced// /}
+
+sed -i "s|$orig_dashed|$dashed|g" my_custom_font.ttx
+sed -i "s|$orig_spaced|$spaced|g" my_custom_font.ttx
+sed -i "s|$orig_no_space|$no_space|g" my_custom_font.ttx
+
+outfile=${1%.*}
+outfile=${outfile//$orig_dashed/$dashed}
+outfile=${outfile//$orig_spaced/$spaced}
+outfile=${outfile//$orig_no_space/$no_space}
+
+mv my_custom_font.ttx custom-$outfile.ttx
+ttx custom-$outfile.ttx
+rm -f custom-$outfile.ttx
